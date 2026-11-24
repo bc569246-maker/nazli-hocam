@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>İyi Ki Varsınız Nazlı Hocam</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Zarif ve Modern Tipografi: Inter & Playfair Display -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,800;1,600&display=swap" rel="stylesheet" />
+
+    <style>
+        /* Temel Sıfırlama ve Tam Ekran Düzeni */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 20% 20%, #241038 0%, #11091f 48%, #07040e 100%);
+            color: #ffffff;
+        }
+
+        .font-serif-title {
+            font-family: 'Playfair Display', Georgia, serif;
+        }
+
+        /* Arka Plan Yüzen Parıltılar ve Kalpler Canvas'ı */
+        #ambientCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Sahne Geçişleri */
+        .stage-container {
+            position: relative;
+            z-index: 10;
+            min-height: 100dvh;
+            width: 100%;
+            transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .stage-hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        /* Nabız Gibi Atan Kalp Animasyonu (Bölünmeden Önce) */
+        @keyframes heartBeat {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 28px rgba(244, 63, 94, 0.55));
+            }
+            50% {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 46px rgba(251, 113, 133, 0.85));
+            }
+        }
+
+        .heart-wrapper {
+            position: relative;
+            width: 270px;
+            height: 245px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            animation: heartBeat 2.2s infinite ease-in-out;
+        }
+
+        @media (min-width: 640px) {
+            .heart-wrapper {
+                width: 330px;
+                height: 300px;
+            }
+        }
+
+        .heart-wrapper.is-split {
+            animation: none;
+            cursor: default;
+        }
+
+        /* Kalbin Sol ve Sağ Yarısı */
+        .heart-half {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            overflow: visible;
+            transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.9s ease;
+            filter: drop-shadow(0 0 24px rgba(244, 63, 94, 0.6));
+        }
+
+        .heart-half.left {
+            left: 0;
+            transform-origin: bottom right;
+        }
+
+        .heart-half.right {
+            right: 0;
+            transform-origin: bottom left;
+        }
+
+        /* Kalp İkiye Ayrıldığında Açılma Hareketi */
+        .heart-wrapper.is-split .heart-half.left {
+            transform: translateX(-82px) rotate(-14deg) scale(0.95);
+            filter: drop-shadow(0 0 18px rgba(244, 63, 94, 0.45));
+        }
+
+        .heart-wrapper.is-split .heart-half.right {
+            transform: translateX(82px) rotate(14deg) scale(0.95);
+            filter: drop-shadow(0 0 18px rgba(244, 63, 94, 0.45));
+        }
+
+        @media (min-width: 640px) {
+            .heart-wrapper.is-split .heart-half.left {
+                transform: translateX(-110px) rotate(-15deg) scale(0.96);
+            }
+            .heart-wrapper.is-split .heart-half.right {
+                transform: translateX(110px) rotate(15deg) scale(0.96);
+            }
+        }
+
+        /* Kalp Ortasındaki "TIKLA" Yazısı */
+        #heartCenterText {
+            position: relative;
+            z-index: 15;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .heart-wrapper.is-split #heartCenterText {
+            opacity: 0;
+            transform: scale(0.6);
+            pointer-events: none;
+        }
+
+        /* Kalp Bölününce Ortada Beliren Buton */
+        #revealedCenterBtn {
+            position: absolute;
+            z-index: 20;
+            opacity: 0;
+            transform: scale(0.5);
+            pointer-events: none;
+            transition: opacity 0.55s ease 0.28s, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.28s, box-shadow 0.25s ease;
+        }
+
+        .heart-wrapper.is-split #revealedCenterBtn {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        /* Final Ekranındaki Parlayan Mor Buton */
+        @keyframes purplePulse {
+            0%, 100% {
+                box-shadow: 0 0 25px rgba(168, 85, 247, 0.65), 0 0 55px rgba(139, 92, 246, 0.35);
+            }
+            50% {
+                box-shadow: 0 0 38px rgba(192, 132, 252, 0.95), 0 0 78px rgba(147, 51, 234, 0.65);
+            }
+        }
+
+        .purple-glow-btn {
+            background: linear-gradient(135deg, #9333ea 0%, #7e22ce 50%, #581c87 100%);
+            border: 2px solid rgba(233, 213, 255, 0.75);
+            animation: purplePulse 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Arka Plan Parıltı ve Kalp Partikülleri -->
+    <canvas id="ambientCanvas"></canvas>
+
+    <!-- =================================================================== -->
+    <!-- 1. SAHNE: ÖĞRETMENLER GÜNÜ BAŞLIĞI VE İKİYE AYRILAN KALP            -->
+    <!-- =================================================================== -->
+    <main id="introStage" class="stage-container flex flex-col items-center justify-between px-5 py-10 sm:py-14 text-center">
+        <!-- Üst Kutlama Başlığı -->
+        <header class="max-w-3xl mx-auto mt-2 sm:mt-4">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/15 border border-rose-300/30 text-rose-200 text-xs sm:text-sm font-semibold tracking-wider uppercase mb-4 shadow-lg">
+                <span>✨</span>
+                <span>24 Kasım Öğretmenler Günü</span>
+                <span>✨</span>
+            </div>
+            <h1 class="font-serif-title text-2xl sm:text-4xl md:text-5xl font-extrabold leading-tight bg-gradient-to-r from-rose-200 via-white to-pink-200 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(244,63,94,0.35)]">
+                İyi Ki Varsınız Nazlı Hocam Öğretmenler Gününüz Kutlu Olsun
+            </h1>
+        </header>
+
+        <!-- Orta Kısım: Kusursuz Birleşik İki Parçalı Kalp -->
+        <section class="my-auto flex flex-col items-center justify-center py-6">
+            <div id="heartContainer" class="heart-wrapper" role="button" tabindex="0" aria-label="Kalbe Tıkla">
+                <!-- Sol Kalp Yarısı (viewBox: 0 0 150 270) -->
+                <svg class="heart-half left" viewBox="0 0 150 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="leftHeartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ff4d79" />
+                            <stop offset="55%" stop-color="#e11d48" />
+                            <stop offset="100%" stop-color="#9f1239" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M150 56 C132 18, 88 8, 52 24 C14 42, 2 88, 16 132 C34 188, 96 228, 150 262 Z"
+                          fill="url(#leftHeartGrad)" />
+                    <!-- Sol Üst Parlak Işık Yansıması -->
+                    <path d="M44 54 C30 68, 25 90, 31 110"
+                          stroke="rgba(255,255,255,0.45)" stroke-width="6" stroke-linecap="round" />
+                </svg>
+
+                <!-- Sağ Kalp Yarısı (viewBox: 150 0 150 270) -->
+                <svg class="heart-half right" viewBox="150 0 150 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="rightHeartGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#fb7185" />
+                            <stop offset="55%" stop-color="#e11d48" />
+                            <stop offset="100%" stop-color="#881337" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M150 56 C168 18, 212 8, 248 24 C286 42, 298 88, 284 132 C266 188, 204 228, 150 262 Z"
+                          fill="url(#rightHeartGrad)" />
+                </svg>
+
+                <!-- Kalbin Tam Ortasındaki İlk "TIKLA" Yazısı -->
+                <span id="heartCenterText" class="text-white font-black text-2xl sm:text-3xl tracking-[0.22em] drop-shadow-[0_3px_12px_rgba(0,0,0,0.55)]">
+                    TIKLA
+                </span>
+
+                <!-- Kalp İkiye Ayrılınca Ortada Açılan Sürpriz Butonu -->
+                <button type="button" id="revealedCenterBtn"
+                        class="px-6 py-3.5 sm:px-8 sm:py-4 rounded-full bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase shadow-[0_0_30px_rgba(253,224,71,0.75)] border-2 border-white hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap">
+                    🎁 Sürprizi Aç
+                </button>
+            </div>
+
+            <p id="helperSubText" class="mt-6 text-xs sm:text-sm text-rose-200/75 font-medium tracking-wide transition-opacity duration-300">
+                Kalbin ortasına dokunun ❤️
+            </p>
+        </section>
+
+        <!-- Alt Bilgi -->
+        <footer class="text-xs text-white/40 font-medium">
+            Sevgi ve Saygıyla...
+        </footer>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- 2. SAHNE: EKRAN TEMİZLENDİKTEN SONRAKİ GTA 6 & MOR BUTON EKRANI     -->
+    <!-- =================================================================== -->
+    <section id="finalStage" class="stage-container stage-hidden hidden flex-col items-center justify-between px-6 py-12 sm:py-16 text-center">
+        <!-- Üst Sürpriz Mesajı -->
+        <div class="max-w-3xl mx-auto mt-4 sm:mt-8">
+            <div class="inline-block px-4 py-1.5 rounded-full bg-purple-500/20 border border-purple-400/40 text-purple-200 text-xs font-extrabold uppercase tracking-widest mb-5">
+                🎮 ÖZEL HEDİYE
+            </div>
+            <h2 class="text-2xl sm:text-4xl md:text-5xl font-black leading-snug text-white drop-shadow-[0_4px_26px_rgba(168,85,247,0.55)]">
+                Ömür Boyu GTA 6'nız Hayırlı Olsun Hocam:) Aşağıdaki Mor Butona Basın:)
+            </h2>
+        </div>
+
+        <!-- Ortada Parlayan Mor "TIKLA" Butonu -->
+        <div class="my-auto flex flex-col items-center justify-center">
+            <button type="button" id="purpleRedirectBtn"
+                    class="purple-glow-btn px-12 py-5 sm:px-16 sm:py-6 rounded-full text-white font-black text-xl sm:text-2xl tracking-[0.22em] uppercase hover:scale-105 active:scale-95 transition-transform cursor-pointer">
+                TIKLA
+            </button>
+        </div>
+
+        <div class="h-6"></div>
+    </section>
+
+    <script>
+        // =================================================================
+        // 1. ARKA PLAN YÜZEN PARILTILAR VE MİNİK KALPLER ANIMASYONU
+        // =================================================================
+        const canvas = document.getElementById('ambientCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Parıltı ve minik kalp parçacıkları oluştur
+        function initParticles() {
+            const count = Math.min(55, Math.floor(window.innerWidth / 22));
+            particles = Array.from({ length: count }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: 1.5 + Math.random() * 3.5,
+                speedY: 0.25 + Math.random() * 0.55,
+                speedX: (Math.random() - 0.5) * 0.35,
+                alpha: 0.2 + Math.random() * 0.65,
+                isHeart: Math.random() > 0.72,
+                hue: Math.random() > 0.5 ? '#fb7185' : '#c084fc'
+            }));
+        }
+        initParticles();
+
+        function drawMiniHeart(x, y, size, color, alpha) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            const s = size * 1.4;
+            ctx.moveTo(0, s * 0.35);
+            ctx.bezierCurveTo(-s, -s * 0.4, -s * 0.5, -s * 1.1, 0, -s * 0.45);
+            ctx.bezierCurveTo(s * 0.5, -s * 1.1, s, -s * 0.4, 0, s * 0.35);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function animateAmbient() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (const p of particles) {
+                p.y -= p.speedY;
+                p.x += p.speedX;
+
+                if (p.y < -20) {
+                    p.y = canvas.height + 20;
+                    p.x = Math.random() * canvas.width;
+                }
+                if (p.x < -20) p.x = canvas.width + 20;
+                if (p.x > canvas.width + 20) p.x = -20;
+
+                if (p.isHeart) {
+                    drawMiniHeart(p.x, p.y, p.size, p.hue, p.alpha * 0.75);
+                } else {
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.hue;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.hue;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            requestAnimationFrame(animateAmbient);
+        }
+        requestAnimationFrame(animateAmbient);
+
+        // =================================================================
+        // 2. KALP BÖLÜNME VE SAHNE GEÇİŞ ETKİLEŞİMLERİ
+        // =================================================================
+        const heartContainer = document.getElementById('heartContainer');
+        const revealedCenterBtn = document.getElementById('revealedCenterBtn');
+        const helperSubText = document.getElementById('helperSubText');
+        const introStage = document.getElementById('introStage');
+        const finalStage = document.getElementById('finalStage');
+        const purpleRedirectBtn = document.getElementById('purpleRedirectBtn');
+
+        let isHeartSplit = false;
+
+        function splitHeartOpen() {
+            if (isHeartSplit) return;
+            isHeartSplit = true;
+            heartContainer.classList.add('is-split');
+            helperSubText.textContent = 'Ortadaki butona tıklayın ✨';
+        }
+
+        // Kalbe tıklama veya klavyeden Enter/Space ile açma
+        heartContainer.addEventListener('click', (e) => {
+            if (e.target === revealedCenterBtn) return;
+            splitHeartOpen();
+        });
+
+        heartContainer.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                splitHeartOpen();
+            }
+        });
+
+        // Kalbin ortasından çıkan butona basınca ekrandaki her şeyi temizleyip final sahnesine geç
+        revealedCenterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            introStage.classList.add('stage-hidden');
+
+            setTimeout(() => {
+                introStage.classList.add('hidden');
+                finalStage.classList.remove('hidden');
+                finalStage.classList.add('flex');
+
+                // Akıcı fade-in için kısa bir frame gecikmesi
+                requestAnimationFrame(() => {
+                    finalStage.classList.remove('stage-hidden');
+                });
+            }, 620);
+        });
+
+        // Final ekranındaki mor "TIKLA" butonuna basınca viceride.com adresine yönlendir
+        purpleRedirectBtn.addEventListener('click', () => {
+            window.location.href = 'https://viceride.com';
+        });
+    </script>
+</body>
+</html>
